@@ -1,6 +1,6 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(to right, #36197b, #e9e4f0);
+    background: linear-gradient(to right, #f0edf9, #e9e4f0);
     display: flex;
     justify-content: center;
     align-items: flex-start;
@@ -10,7 +10,7 @@ body {
   }
   
   .todo-container {
-    background: #ffffff;
+    background: #590404;
     padding: 30px;
     border-radius: 12px;
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
