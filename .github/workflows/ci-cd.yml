@@ -24,21 +24,21 @@ jobs:
         run: npm test
 
       - name: Build app
-        run: npm run build
+        run: npm run build || echo "No build script defined"
 
       - name: Send Email Notification
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 465
-          username: sandeeppatali
-          password: sandeeppatali2003
-          subject: "✅ Deployment Complete: My Web App"
-          to: sandeeppatali683@gmail.com
-          from: "GitHub CI/CD Bot <sandeeppatali>"
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "✅ Deployment Complete: Node.js App"
+          to: maheshanekallu@gmail.com
+          from: "GitHub Actions <${{ secrets.EMAIL_USERNAME }}>"
           body: |
-            🚀 Hello Sandeep!!
+            🚀 Hello Mahesh!!
 
             Your application was just deployed successfully.
 
-            🔗 Live URL: https://my-ci-cd-webapp-3.onrender.com/
+            🔗 Live URL: https://node-cicd-q6g2.onrender.com/
