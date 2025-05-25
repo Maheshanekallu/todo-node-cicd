@@ -20,6 +20,11 @@ jobs:
 
       - name: Build app
         run: npm run build || echo "No build script defined"
+        
+      - name: Deploy to Render
+        run: curl "$RENDER_DEPLOY_HOOK"
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
 
       - name: Send Email Notification
         uses: dawidd6/action-send-mail@v3
