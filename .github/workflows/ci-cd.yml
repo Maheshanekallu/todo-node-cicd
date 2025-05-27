@@ -38,29 +38,31 @@ jobs:
           echo "🚀 Triggering Render deployment..."
           curl -s -X POST "$RENDER_DEPLOY_HOOK"
 
-      - name: Monitor Render Deployment
+      - name: Trigger and Monitor Render Deployment
         env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
         run: |
-          echo "⏳ Waiting for deployment status..."
+          echo "🚀 Triggering Render deployment..."
+          curl -s -X POST "$RENDER_DEPLOY_HOOK"
+
+          echo "⏳ Waiting for deployment to start..."
 
           for i in {1..30}; do
             RESPONSE=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
               "https://api.render.com/v1/services/$SERVICE_ID/deploys")
 
-            DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.[0].id')
-            STATUS=$(echo "$RESPONSE" | jq -r '.[0].status')
+            DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.[0].deploy.id')
+            STATUS=$(echo "$RESPONSE" | jq -r '.[0].deploy.status')
 
             echo "Attempt $i - Deploy ID: $DEPLOY_ID - Status: $STATUS"
 
             if [[ "$STATUS" == "live" ]]; then
               echo "✅ Deployment successful!"
-              SUCCESS=true
               break
             elif [[ "$STATUS" == "failed" ]]; then
               echo "❌ Deployment failed!"
-              SUCCESS=false
               break
             fi
 
@@ -74,7 +76,6 @@ jobs:
           echo "📝 Render Logs:"
           echo "$LOGS"
 
-          echo "$SUCCESS" > deploy_status.txt
 
       - name: Send Email Notification
         if: success() && steps.build-test-deploy.outputs.success != 'false'
