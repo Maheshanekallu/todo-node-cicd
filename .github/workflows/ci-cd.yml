@@ -71,10 +71,12 @@ jobs:
 
           echo "📜 Fetching deployment logs for $DEPLOY_ID..."
           LOGS=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
-            "https://api.render.com/v1/deploys/$DEPLOY_ID/logs" | jq -r '.logs')
+            "https://api.render.com/v1/deploys/$DEPLOY_ID/logs")
 
           echo "📝 Render Logs:"
           echo "$LOGS"
+
+
 
 
       - name: Send Email Notification
