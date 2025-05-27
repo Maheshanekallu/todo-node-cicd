@@ -27,30 +27,42 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
         run: |
-          # Trigger deploy
-          curl -X POST "$RENDER_DEPLOY_HOOK"
+          echo "🚀 Triggering Render deployment..."
+          DEPLOY_RESPONSE=$(curl -s -X POST "$RENDER_DEPLOY_HOOK")
+          DEPLOY_ID=$(echo "$DEPLOY_RESPONSE" | jq -r '.deploy.id')
 
-          # Poll for deployment status
+          if [[ "$DEPLOY_ID" == "null" || -z "$DEPLOY_ID" ]]; then
+            echo "❌ Failed to trigger deployment or extract deploy ID"
+            echo "Response: $DEPLOY_RESPONSE"
+            exit 1
+          fi
+
+          echo "⏳ Monitoring deploy ID: $DEPLOY_ID"
+
           for i in {1..30}; do
-            echo "Checking deployment status... attempt $i"
             STATUS=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
-              https://api.render.com/v1/services/$SERVICE_ID/deploys | jq -r '.[0].status')
+              https://api.render.com/v1/deploys/$DEPLOY_ID | jq -r '.status')
 
-            echo "Status: $STATUS"
+            echo "Attempt $i - Status: $STATUS"
 
             if [[ "$STATUS" == "live" ]]; then
-              echo "✅ Render deployment successful"
-              exit 0
+              echo "✅ Render deployment successful!"
+              break
             elif [[ "$STATUS" == "failed" ]]; then
-              echo "❌ Render deployment failed"
+              echo "❌ Render deployment failed!"
+              curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+                https://api.render.com/v1/deploys/$DEPLOY_ID/logs | jq -r '.logs'
               exit 1
             fi
 
             sleep 10
           done
 
-          echo "❌ Timed out waiting for deployment"
-          exit 1
+          # Print full deploy logs regardless of status
+          echo "📜 Deployment Logs:"
+          curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+            https://api.render.com/v1/deploys/$DEPLOY_ID/logs | jq -r '.logs'
+
 
 
       - name: Send Email Notification
