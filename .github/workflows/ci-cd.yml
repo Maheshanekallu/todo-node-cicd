@@ -68,16 +68,7 @@ jobs:
 
             sleep 10
           done
-
-          echo "📜 Fetching deployment logs for $DEPLOY_ID..."
-          LOGS=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
-            "https://api.render.com/v1/deploys/$DEPLOY_ID/logs")
-
-          echo "📝 Render Logs:"
-          echo "$LOGS"
-
-
-
+          
 
       - name: Send Email Notification
         if: success() && steps.build-test-deploy.outputs.success != 'false'
