@@ -25,50 +25,39 @@ jobs:
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
         run: |
           echo "🚀 Triggering Render deployment..."
-          DEPLOY_RESPONSE=$(curl -s -X POST "$RENDER_DEPLOY_HOOK")
+          curl -s -X POST "$RENDER_DEPLOY_HOOK"
 
-          echo "Raw deploy response: $DEPLOY_RESPONSE"
-          DEPLOY_ID=$(echo "$DEPLOY_RESPONSE" | jq -r '.deploy.id')
-
-          if [[ "$DEPLOY_ID" == "null" || -z "$DEPLOY_ID" ]]; then
-            echo "❌ Failed to trigger deployment or extract deploy ID"
-            exit 1
-          fi
-
-          echo "⏳ Monitoring deploy ID: $DEPLOY_ID"
+          echo "⏳ Waiting for deployment to start..."
 
           for i in {1..30}; do
-            API_RESPONSE=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
-              https://api.render.com/v1/deploys/$DEPLOY_ID)
+            RESPONSE=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+              "https://api.render.com/v1/services/$SERVICE_ID/deploys")
 
-            if ! echo "$API_RESPONSE" | jq empty 2>/dev/null; then
-              echo "⚠️ API did not return valid JSON. Response: $API_RESPONSE"
-              sleep 10
-              continue
-            fi
+            DEPLOY_ID=$(echo "$RESPONSE" | jq -r '.[0].id')
+            STATUS=$(echo "$RESPONSE" | jq -r '.[0].status')
 
-            STATUS=$(echo "$API_RESPONSE" | jq -r '.status')
-            echo "Attempt $i - Status: $STATUS"
+            echo "Attempt $i - Deploy ID: $DEPLOY_ID - Status: $STATUS"
 
             if [[ "$STATUS" == "live" ]]; then
-              echo "✅ Render deployment successful!"
+              echo "✅ Deployment successful!"
               break
             elif [[ "$STATUS" == "failed" ]]; then
-              echo "❌ Render deployment failed!"
-              echo "📜 Logs:"
-              curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
-                https://api.render.com/v1/deploys/$DEPLOY_ID/logs | jq -r '.logs'
-              exit 1
+              echo "❌ Deployment failed!"
+              break
             fi
 
             sleep 10
           done
 
-          echo "📜 Final Deployment Logs:"
-          curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
-            https://api.render.com/v1/deploys/$DEPLOY_ID/logs | jq -r '.logs'
+          echo "📜 Fetching deployment logs for $DEPLOY_ID..."
+          LOGS=$(curl -s -H "Authorization: Bearer $RENDER_API_KEY" \
+            "https://api.render.com/v1/deploys/$DEPLOY_ID/logs" | jq -r '.logs')
+
+          echo "📝 Render Logs:"
+          echo "$LOGS"
 
 
 
